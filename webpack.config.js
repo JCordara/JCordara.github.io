@@ -6,7 +6,7 @@ const appDirectory = fs.realpathSync(process.cwd());
 module.exports = {
     entry: path.resolve(appDirectory, "src/app.ts"), //path to the main .ts file
     output: {
-        filename: "js/bundleName.js", //name for the javascript file that is created/compiled in memory
+        filename: "js/main.js", //name for the javascript file that is created/compiled in memory
         clean: true,
     },
     resolve: {
