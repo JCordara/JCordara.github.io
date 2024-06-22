@@ -1,17 +1,23 @@
 {
   "name": "ghpage",
-  "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --open",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "tsc && vite build && vite preview --host --open"
   },
+  "typeRoots": [
+    "node_modules/@types",
+    "src/@types"
+  ],
   "devDependencies": {
     "@babylonjs/core": "^7.12.0",
     "@babylonjs/inspector": "^7.12.0",
     "typescript": "^5.2.2",
     "vite": "^5.3.1"
+  },
+  "dependencies": {
+    "babylonjs": "^7.12.0"
   }
 }

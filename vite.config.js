@@ -1,5 +1,15 @@
 import { defineConfig } from "vite";
 
-export default defineConfig({
-  base: "https://saram7619.github.io/ches/",
+export default defineConfig(({ command, mode }) => {
+  return {
+    resolve: {
+      alias: {
+        'babylonjs': mode === 'development' ? 'babylonjs/babylon.max' : 'babylonjs'
+        }
+      },
+    base: "https://jcordara.github.io/ches/",
+    build: {
+      outDir: "ches"
+    }
+  };
 });
