@@ -360,6 +360,12 @@ function isInCheck(board: ChessBoard, color: PieceColor): boolean {
                             }
                         }
                         break;
+
+                    case PieceType.King:
+                        if (Math.abs(difference.x) <= 1 && Math.abs(difference.y) <= 1) {
+                            return true;
+                        }
+                        break;
                 }
             }
         }
