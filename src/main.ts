@@ -467,7 +467,7 @@ function isMoveLegal(board: ChessBoard, piece: ChessPiece, newLocation: vec2): b
                 if (piece.state.notMoved) {
                     if (newLocation.equals(new vec2(piece.state.position.x, piece.state.position.y - 2))) {
                         if (board.squares[newLocation.x][newLocation.y].occupant == null 
-                            && board.squares[newLocation.x][newLocation.y - 1].occupant == null) 
+                            && board.squares[newLocation.x][newLocation.y + 1].occupant == null) 
                         {
                             return true;
                         }
