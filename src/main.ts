@@ -734,7 +734,8 @@ class App {
 
     constructor() {
 
-        this.socket = io("http://184.64.124.62:55342");
+        this.socket = io("184.64.124.62:55342");
+        // this.socket = io("localhost:55342");  // for dev
         this.setupSocket();
 
         this.renderingManager = new RenderingManager();
