@@ -5,6 +5,7 @@ import {
     Vector3 as vec3, 
     Vector2 as vec2,
 } from "@babylonjs/core";
+import { io, Socket } from "socket.io-client";
 
 
 class RenderingManager {
@@ -121,6 +122,22 @@ class PieceState {
         this.enPassant = false;
         this.notMoved = true;
     }
+
+    public toSerial(): string {
+        return (
+            `${vec2ChessCoords(this.position)}`
+            + `${this.enPassant ? '1' : '0'}`
+            + `${this.notMoved ? '1' : '0'}`
+        );
+    }
+
+    static fromSerial(serial: string): PieceState {
+        const state = new PieceState();
+        state.position = chessCoords2vec(serial.substring(0, 2));
+        state.enPassant = serial.charAt(2) == '1';
+        state.notMoved = serial.charAt(3) == '1';
+        return state;
+    }
 }
 
 enum PieceColor {
@@ -174,7 +191,7 @@ class ChessBoard {
         }
     }
 
-    copyState(): ChessBoard {
+    public copyState(): ChessBoard {
         const other = new ChessBoard();
         for (let i = 0; i < 8; i++) {
             for (let j = 0; j < 8; j++) {
@@ -183,6 +200,66 @@ class ChessBoard {
         }
         return other;
     }
+
+    public toSerial(): string {
+        let serialString = "";
+        
+        for (let x = 0; x < 8; x++) {
+            for (let y = 0; y < 8; y++) {
+                const occupant = this.squares[x][y].occupant;
+                if (occupant != null) {
+                    switch(occupant.type) {
+                        case PieceType.Pawn: serialString += 'p'; break;
+                        case PieceType.Knight: serialString += 'n'; break;
+                        case PieceType.Bishop: serialString += 'b'; break;
+                        case PieceType.Rook: serialString += 'r'; break;
+                        case PieceType.Queen: serialString += 'q'; break;
+                        case PieceType.King: serialString += 'k'; break;
+                    }
+                    serialString += occupant.color == PieceColor.Light ? '0' : '1';
+                    serialString += occupant.state.toSerial();
+                }
+            }
+        }
+
+        return serialString;
+    }
+
+    static fromSerial(serial: string): ChessBoard {
+        const newBoard = new ChessBoard();
+        
+        const chunkLength = 6;
+
+        for (let i = 0; i < serial.length; i += chunkLength) {
+            const chunk = serial.substring(i, i + chunkLength);
+
+            const newPieceColor = (chunk.charAt(1) == '0') ? PieceColor.Light : PieceColor.Dark;
+            const newPieceState = PieceState.fromSerial((chunk.substring(2)));
+            let newPieceType = PieceType.Pawn;
+            switch (chunk.charAt(0)) {
+                case 'p': newPieceType = PieceType.Pawn; break;
+                case 'n': newPieceType = PieceType.Knight; break;
+                case 'b': newPieceType = PieceType.Bishop; break;
+                case 'r': newPieceType = PieceType.Rook; break;
+                case 'q': newPieceType = PieceType.Queen; break;
+                case 'k': newPieceType = PieceType.King; break;
+            }
+
+            const newPiece = new ChessPiece(newPieceType, newPieceColor, newPieceState.position);
+            newPiece.state = newPieceState;
+            newBoard.squares[newPieceState.position.x][newPieceState.position.y].occupant = newPiece;
+        }
+
+        return newBoard;
+    }
+}
+
+function vec2ChessCoords(vector: vec2): string {
+    return `${String.fromCharCode('a'.charCodeAt(0) + vector.x)}${vector.y + 1}`;
+}
+
+function chessCoords2vec(coords: string): vec2 {
+    return new vec2(coords.charCodeAt(0) - 'a'.charCodeAt(0), parseInt(coords.charAt(1)) - 1);
 }
 
 function isInCheck(board: ChessBoard, color: PieceColor): boolean {
@@ -375,7 +452,7 @@ function isInCheck(board: ChessBoard, color: PieceColor): boolean {
 }
 
 function isMoveLegal(board: ChessBoard, piece: ChessPiece, newLocation: vec2): boolean {
-    console.log(`Validating move: ${PieceType[piece.type]} to ${String.fromCharCode('a'.charCodeAt(0) + newLocation.x)}${newLocation.y + 1}`);
+    console.log("Validating move:", vec2ChessCoords(newLocation));
 
     // Bounds check (cant move off board)
     if (newLocation.x > 8 || newLocation.x < 0 || newLocation.y > 8 || newLocation.y < 0) {
@@ -653,8 +730,13 @@ class App {
     draggingPiece: boolean;
     pointerIxnPlane?: BABYLON.Mesh;
     pointerIxnPlaneMat: BABYLON.StandardMaterial;
+    socket: Socket;
 
     constructor() {
+
+        this.socket = io("http://184.64.124.62:55342");
+        this.setupSocket();
+
         this.renderingManager = new RenderingManager();
         this.board = this.createChessBoard();
         this.initializePieces();
@@ -700,6 +782,23 @@ class App {
                 this.onPiecePlaced();
             }
         }
+
+        window.addEventListener("keydown", (ev) => {
+            if (ev.key === 'r') {
+                this.socket.emit("reset");
+                console.log("tryna reset");
+            }
+        });
+    }
+
+    private setupSocket() {
+        this.socket.on("connect", () => {
+            console.log("Connected!", this.socket.id);
+        });
+
+        this.socket.on("set", (state: string) => {
+            this.setBoard(ChessBoard.fromSerial(state));
+        });
     }
 
     private getBoardCoordsUnderPointer(): vec2 | undefined {
@@ -729,6 +828,55 @@ class App {
         }
     }
 
+    private clearSquare(coords: vec2) {
+        if (this.board.squares[coords.x][coords.y].occupant != null) {
+            this.renderingManager.scene.removeMesh(this.board.squares[coords.x][coords.y].occupant!.mesh!);
+        }
+
+        this.board.squares[coords.x][coords.y].occupant = null;
+    }
+
+    private setSquare(coords: vec2, pieceType: PieceType, PieceColor: PieceColor, state?: PieceState) {
+        this.clearSquare(coords);
+
+        const newPiece = this.createChessPiece(pieceType, PieceColor, coords);
+
+        if (state != undefined) {
+            newPiece.state = state;
+        }
+
+        this.board.squares[coords.x][coords.y].occupant = newPiece;
+    }
+
+    private setBoard(newBoard: ChessBoard) {
+        for (let x = 0; x < 8; x++) {
+            for (let y = 0; y < 8; y++) {
+                const occupant = newBoard.squares[x][y].occupant;
+                if (occupant != null) {
+                    this.setSquare(new vec2(x, y), occupant.type, occupant.color, occupant.state);
+                } else {
+                    this.clearSquare(new vec2(x, y));
+                }
+            }
+        }
+    }
+
+    private movePiece(from: vec2, to: vec2) {
+        if (this.board.squares[from.x][from.y].occupant == null) {
+            return;
+        }
+
+        const piece = this.board.squares[from.x][from.y].occupant!;
+
+        this.clearSquare(to);
+
+        this.board.squares[from.x][from.y].occupant = null;
+        this.board.squares[to.x][to.y].occupant = piece;
+
+        piece.state.position = to;
+        piece.state.notMoved = false;
+    }
+
     private onPiecePlaced() {
         if (this.selectedPiece == null) {
             return;
@@ -740,14 +888,9 @@ class App {
         }
 
         if (isMoveLegal(this.board, this.selectedPiece, coords)) {
-            console.log("legal move!");
-            const oldPosition = this.selectedPiece.state.position;
             
-            // Remove any piece currently on the destination square
-            const oldOccupant = this.board.squares[coords.x][coords.y].occupant;
-            if (oldOccupant != null) {
-                this.renderingManager.scene.removeMesh(oldOccupant.mesh!);
-            }
+            const oldPosition = this.selectedPiece.state.position;
+            this.socket.emit("move", vec2ChessCoords(oldPosition), vec2ChessCoords(coords));
 
             // Remove pawn in case of en passant
             const behind = this.selectedPiece.color == PieceColor.Light ? -1 : 1;
@@ -756,8 +899,7 @@ class App {
                 && this.board.squares[coords.x][coords.y + behind].occupant!.color != this.selectedPiece.color
                 && this.board.squares[coords.x][coords.y + behind].occupant!.state.enPassant) 
             {
-                this.renderingManager.scene.removeMesh(this.board.squares[coords.x][coords.y + behind].occupant!.mesh!);
-                this.board.squares[coords.x][coords.y + behind].occupant = null;
+                this.clearSquare(new vec2(coords.x, coords.y + behind));
             }
 
             // Update en passant status
@@ -769,8 +911,9 @@ class App {
                     }
                 }
             }
+
+            // Add en passant status to this pawn until next turn
             if (this.selectedPiece.type == PieceType.Pawn && Math.abs(oldPosition.y - coords.y) == 2) {
-                // Add en passant status to this pawn until next turn
                 this.selectedPiece.state.enPassant = true;
             }
 
@@ -782,17 +925,11 @@ class App {
                     longCastle ? this.selectedPiece.state.position.x - 1 : this.selectedPiece.state.position.x + 1, 
                     this.selectedPiece.state.position.y
                 );
-                this.board.squares[newPosition.x][newPosition.y].occupant = this.board.squares[rookPosition.x][rookPosition.y].occupant;
-                this.board.squares[rookPosition.x][rookPosition.y].occupant = null;
-                this.board.squares[newPosition.x][newPosition.y].occupant!.state.position = newPosition;
-                this.board.squares[newPosition.x][newPosition.y].occupant!.state.notMoved = false;
+                this.movePiece(rookPosition, newPosition);
             }
             
-            // Update piece position
-            this.board.squares[oldPosition.x][oldPosition.y].occupant = null;
-            this.board.squares[coords.x][coords.y].occupant = this.selectedPiece;
-            this.selectedPiece.state.position = coords;
-            this.selectedPiece.state.notMoved = false;
+            // Move the piece
+            this.movePiece(oldPosition, coords);
         }
         else console.log("illegal move!");
     }
@@ -915,5 +1052,12 @@ class App {
     }
 }
 
-const app = new App();
-app.run();
+
+function main() {
+
+    const app = new App();
+    app.run();
+}
+
+
+main();
