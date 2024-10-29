@@ -1,5 +1,6 @@
 import "@babylonjs/core/Debug/debugLayer";
 import "@babylonjs/inspector";
+import * as GUI from '@babylonjs/gui'
 import * as BABYLON from "@babylonjs/core";
 import {
     Vector3 as vec3, 
@@ -15,6 +16,9 @@ class RenderingManager {
     camera: BABYLON.UniversalCamera;
     globalLight: BABYLON.DirectionalLight;
     chessPieceAtlasMaterial: BABYLON.StandardMaterial;
+    gui: GUI.AdvancedDynamicTexture;
+    flipbutton: GUI.Button;
+    turnText: GUI.TextBlock;
 
     constructor() {
         this.canvas = document.createElement("canvas");
@@ -28,6 +32,7 @@ class RenderingManager {
         });
         
         this.scene = new BABYLON.Scene(this.engine);
+        this.scene.clearColor = new BABYLON.Color4(0.1, 0.1, 0.1, 1.0);
 
         this.camera = new BABYLON.UniversalCamera("Camera", new vec3(0, 0, -100), this.scene);
         this.camera.fov = 0.1;
@@ -42,6 +47,29 @@ class RenderingManager {
         this.chessPieceAtlasMaterial.diffuseTexture = chessPieceAtlasTexture;
         this.chessPieceAtlasMaterial.useAlphaFromDiffuseTexture = true;
         this.chessPieceAtlasMaterial.diffuseTexture.hasAlpha = true;
+
+        this.gui = GUI.AdvancedDynamicTexture.CreateFullscreenUI("myUI");
+        
+        this.turnText = new GUI.TextBlock();
+        this.turnText.text = "White's turn";
+        this.turnText.fontSize = 36;
+        this.turnText.color = "white";
+        this.turnText.left = "500vw";
+        this.gui.addControl(this.turnText);
+
+        this.flipbutton = GUI.Button.CreateSimpleButton("button", "Flip Board");
+        this.flipbutton.top = "-43%";
+        this.flipbutton.left = "17%";
+        this.flipbutton.width = "120px";
+        this.flipbutton.height = "40px";
+        this.flipbutton.cornerRadius = 20;
+        this.flipbutton.thickness = 3;
+        this.flipbutton.children[0].color = "#DFF9FB";
+        this.flipbutton.children[0].fontSize = 20;
+        this.flipbutton.color = "#246";
+        this.flipbutton.background = "#368";
+        this.gui.addControl(this.flipbutton);
+        
 
         // hide/show the Inspector when user presses 'i'
         window.addEventListener("keydown", (ev) => {
@@ -180,6 +208,7 @@ class BoardSquare {
 
 class ChessBoard {
     squares: Array<Array<BoardSquare>>;
+    turn: PieceColor;
 
     constructor() {
         this.squares = new Array<Array<BoardSquare>>(8);
@@ -189,6 +218,7 @@ class ChessBoard {
                 this.squares[i][j] = new BoardSquare();
             }
         }
+        this.turn = PieceColor.Light;
     }
 
     public copyState(): ChessBoard {
@@ -202,7 +232,7 @@ class ChessBoard {
     }
 
     public toSerial(): string {
-        let serialString = "";
+        let serialString = this.turn == PieceColor.Light ? "l" : "d";
         
         for (let x = 0; x < 8; x++) {
             for (let y = 0; y < 8; y++) {
@@ -227,10 +257,12 @@ class ChessBoard {
 
     static fromSerial(serial: string): ChessBoard {
         const newBoard = new ChessBoard();
-        
         const chunkLength = 6;
 
-        for (let i = 0; i < serial.length; i += chunkLength) {
+        console.log(serial.charAt(0));
+        newBoard.turn = (serial.charAt(0) == 'l') ? PieceColor.Light : PieceColor.Dark;
+
+        for (let i = 1; i < serial.length; i += chunkLength) {
             const chunk = serial.substring(i, i + chunkLength);
 
             const newPieceColor = (chunk.charAt(1) == '0') ? PieceColor.Light : PieceColor.Dark;
@@ -453,6 +485,11 @@ function isInCheck(board: ChessBoard, color: PieceColor): boolean {
 
 function isMoveLegal(board: ChessBoard, piece: ChessPiece, newLocation: vec2): boolean {
     console.log("Validating move:", vec2ChessCoords(newLocation));
+
+    // It's not your turn
+    if (piece.color != board.turn) {
+        return false;
+    }
 
     // Bounds check (cant move off board)
     if (newLocation.x > 8 || newLocation.x < 0 || newLocation.y > 8 || newLocation.y < 0) {
@@ -731,6 +768,7 @@ class App {
     pointerIxnPlane?: BABYLON.Mesh;
     pointerIxnPlaneMat: BABYLON.StandardMaterial;
     socket: Socket;
+    flipped: boolean;
 
     constructor() {
 
@@ -745,7 +783,7 @@ class App {
         this.pointerIxnPlaneMat.alpha = 0.0;
         this.draggingPiece = false;
         this.selectedPiece = null;
-
+        this.flipped = false;
         this.renderingManager.scene.onPointerDown = () => {
             const mesh = this.renderingManager.getMeshUnderCursor();
             this.selectedPiece = null;
@@ -789,6 +827,13 @@ class App {
                 this.socket.emit("reset");
                 console.log("tryna reset");
             }
+            if (ev.key === 'f') {
+                this.flipped = !this.flipped;
+            }
+        });
+        
+        this.renderingManager.flipbutton.onPointerClickObservable.add(() => {
+            this.flipped = !this.flipped;
         });
     }
 
@@ -860,6 +905,8 @@ class App {
                 }
             }
         }
+        this.board.turn = newBoard.turn;
+        this.renderingManager.turnText.text = (newBoard.turn == PieceColor.Light) ? "White's turn" : "Black's turn";
     }
 
     private movePiece(from: vec2, to: vec2) {
@@ -886,6 +933,11 @@ class App {
         const coords = this.getBoardCoordsUnderPointer();
         if (coords == undefined) {
             return;
+        }
+
+        if (this.flipped) {
+            coords.x = 7 - coords.x;
+            coords.y = 7 - coords.y;
         }
 
         if (isMoveLegal(this.board, this.selectedPiece, coords)) {
@@ -931,6 +983,8 @@ class App {
             
             // Move the piece
             this.movePiece(oldPosition, coords);
+            this.board.turn = (this.board.turn == PieceColor.Light) ? PieceColor.Dark : PieceColor.Light;
+            this.renderingManager.turnText.text = (this.board.turn == PieceColor.Light) ? "Black's turn" : "White's turn";
         }
         else console.log("illegal move!");
     }
@@ -958,6 +1012,7 @@ class App {
 
     public initializePieces() {
         // this.board.clear();
+        this.board.turn = PieceColor.Light;
         
         // Light starting pieces
         for (let i = 0; i < 8; i++) {
@@ -1034,8 +1089,8 @@ class App {
                         const piece = this.board.squares[x][y].occupant!;
                         // this.board.squares[x][y].occupant!.state.position = new vec2(x, y);
                         this.board.squares[x][y].occupant!.mesh!.position = new vec3(
-                            piece.state.position.x - 3.5, 
-                            piece.state.position.y - 3.5, 
+                            (piece.state.position.x - 3.5) * (this.flipped ? -1 : 1), 
+                            (piece.state.position.y - 3.5) * (this.flipped ? -1 : 1), 
                             0.0,
                         );
                     }
@@ -1055,7 +1110,6 @@ class App {
 
 
 function main() {
-
     const app = new App();
     app.run();
 }
