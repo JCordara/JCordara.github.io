@@ -5,25 +5,27 @@
     <!-- <link rel="icon" type="image/svg+xml" href="/vite.svg" /> -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>turf war</title>
-    <script type="module" crossorigin src="/assets/turfware-NxrYhgf9.js"></script>
+    <script type="module" crossorigin src="/assets/turfware-B6Z8-cYr.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
-    <link rel="stylesheet" crossorigin href="/assets/turfware-BFf5U1Cr.css">
+    <link rel="stylesheet" crossorigin href="/assets/turfware-qBM7vL2z.css">
   </head>
   <body>
     <div class="page">
       <p id="speed-label">Speed</p>
-      <input type="range" min="1" max="11" value="1" id="speed-slider">
+      <input type="range" min="1" max="20" value="1" id="speed-slider">
       <p id="speed-counter">1</p>
       <div>
         <canvas id="canvas" width="70vw" height="70vw" max-width="50vh" max-height="50vh"></canvas>
       </div>
-      <div>
+      <div id="settings-container">
         <button id="play-button">PLAY</button>
+        <!-- <input type="number" min="2" max="500" value="100" id="cell-count"> -->
       </div>
       <div id="code-container">
-        <textarea class="code-area" id="p1-code"></textarea>
-        <textarea class="code-area" id="p2-code"></textarea>
+        <textarea class="code-area" spellcheck="false" id="p1-code"></textarea>
+        <textarea class="code-area" spellcheck="false" id="p2-code"></textarea>
       </div>
+      <a href="reference/index.html" target="_blank" rel="noopener noreferrer">Instruction set</a>
     </div>
   </body>
 </html>
