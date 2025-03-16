@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- <link rel="icon" type="image/svg+xml" href="/vite.svg" /> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>turf war Instruction Set Reference</title>
+    <link rel="stylesheet" crossorigin href="/assets/turfware_reference-DiM2uzdl.css">
+  </head>
+  <body>
+    <div class="content">
+      <h1>Instruction Set Reference</h1>
+      <h2>turf war</h2>
+      <p>
+        In this game, algorithms compete to capture as much memory space as
+        possible. Memory is treated as a 1 dimensional array (though visually
+        represented in 2D). Each algorithm has the following instructions
+        available:
+      </p>
+      <br />
+      <h3>put</h3>
+      <p>Claim a single cell in memory by address</p>
+      <h3>set</h3>
+      <p>Initialize a variable to given value. If variable does not exist, this command will create it. Initial value can be another variable.</p>
+      <h3>add/sub</h3>
+      <p>Add a value to a variable or subtract a value from a variable. The value can be another variable.</p>
+      <h3>rng</h3>
+      <p>Set a variable to a random value within the memory space. If variable does not exist, this command will create it. Initial value can be another variable.</p>
+      <h3>cmp</h3>
+      <p>Compare two numbers or variables and set the the conditional flags based on the results of the comparison. These conditional flags will be used by subsequent conditional jump commands.</p>
+      <h3>j</h3>
+      <p>Jump to a label in the instructions. Labels are defined by a name followed by a ':' (colon) character, and can be defined anywhere in the algorithm.</p>
+      <h3>jeq/jlt/jgt/jle/jge</h3>
+      <p>Jump to the given label based on the status of the conditional flags. Options are (jump if-) equal, less than, greater than, less than or equal, greater than or equal.</p>
+    </div>
+  </body>
+</html>
