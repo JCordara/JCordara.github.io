@@ -20,6 +20,16 @@
       <br />
       <h3>put &lt;addr&gt;</h3>
       <p>Claim a single cell in memory by address <code>&lt;addr&gt;</code></p>
+      <h3>fld &lt;addr&gt;</h3>
+      <p>Floods a group of cells around address <code>&lt;addr&gt;</code>, as long as the following conditions are met:</p>
+      <ul>
+        <li><p>- Cells all have the same owner</p></li>
+        <li><p>- Group is book-ended by cells owned by the calling code</p></li>
+      </ul>
+      <h3>cap &lt;addr&gt;</h3>
+      <p>Captures the cell at address <code>&lt;addr&gt;</code>, as long as the cell is owned by another player. Also claims adjacent cells if they are owned by the same player as the origin cell.</p>
+      <h3>get &lt;var&gt; &lt;addr&gt;</h3>
+      <p>Read cell owner at address <code>&lt;addr&gt;</code> into variable <code>&lt;var&gt;</code>. Owner is zero-indexed, and an algorithm can access it's own owner ID with the built-in variable <code>$id</code>.</p>
       <h3>set &lt;var&gt;, &lt;value&gt;</h3>
       <p>Initialize <code>&lt;var&gt;</code> to <code>&lt;value&gt;</code>. If <code>&lt;var&gt;</code> does not exist, this command will create it. <code>&lt;value&gt;</code> can be a variable or a number.</p>
       <h3>add &lt;var&gt;, &lt;value&gt;</h3>
