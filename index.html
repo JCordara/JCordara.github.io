@@ -4,10 +4,9 @@
     <meta charset="UTF-8" />
     <!-- <link rel="icon" type="image/svg+xml" href="/vite.svg" /> -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ches</title>
+    <title>Joseph's Page</title>
     <style>
       html, body {
-          overflow: hidden;
           width: 100%;
           height: 100%;
           margin: 0;
@@ -18,17 +17,38 @@
           height: 100%;
           touch-action: none;
       }
+      .content {
+          overflow-y: scroll;
+          width: 100%;
+          height: 100%;
+          align-content: center;
+          text-align: center;
+      }
+      img {
+          margin: 0 auto;
+      }
+      hr {
+          margin-bottom: 50px;
+          width: 30%;
+          color: lightgrey;
+      }
   </style>
   </head>
   <body>
-    <div id="app">
-      <h1>Nothing to see here</h1>
-      <ul>
-        <li><a href="ches/">ches</a></li>
-        <li><a href="turfwar/">turf war</a></li>
-        <li><a href="flappybird/">flappy bird</a></li>
-        <li><a href="jumpgame/">jump game</a></li>
-      </ul>
+    <div class="content">
+      <h2>Some random projects</h2>
+      <hr />
+      <a href="ches/"><img src="/ches_thumbnail.png" width="150px" style="display: block;"/>ches</a>
+      <p>A public chess board - anyone can move the pieces. Press R to reset. Featuring high effort MS Paint artwork. (Babylon.js, Typescript, Node backend)</p>
+      <hr />
+      <a href="turfwar/"><img src="/turfwar_thumbnail.png" width="150px" style="display: block;"/>turf war</a>
+      <p>Use an assembly-like instruction set to capture as much space as possible. (Typescript)</p>
+      <hr />
+      <a href="flappybird/"><img src="/flappybird_thumbnail.png" width="150px" style="display: block;"/>flappy bird</a>
+      <p>It's just flappy bird. (Excalibur.js, Typescript)</p>
+      <hr />
+      <a href="jumpgame/"><img src="/jumpgame_thumbnail.png" width="150px" style="display: block;"/>jump game</a>
+      <p>A foddy-style jumping game. (Godot)</p>
     </div>
   </body>
 </html>
